@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "359850736203",
+    "project_id": "spotify-reprise-carnell",
+    "storage_bucket": "spotify-reprise-carnell.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:359850736203:android:9e0fa24a3a629c1fcd2bce",
+        "android_client_info": {
+          "package_name": "com.example.spotify_reprise"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAJ-E-qABsY5qUTYTrlcgp7qa37Vy4UZ60"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
