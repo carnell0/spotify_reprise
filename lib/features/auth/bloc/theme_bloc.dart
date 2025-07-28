@@ -27,7 +27,7 @@ class ThemeBloc extends Bloc<ThemeEvent, ThemeState> {
       ThemeData.dark().textTheme, // Applique le style par défaut du thème sombre
     ),
     // ===========================================
-    colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.green, brightness: Brightness.dark,).copyWith(background: Colors.black),
+    colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.green, brightness: Brightness.dark,).copyWith(surface: Colors.black),
   );
 
   static final ThemeData _lightTheme = ThemeData(
@@ -46,6 +46,6 @@ class ThemeBloc extends Bloc<ThemeEvent, ThemeState> {
       ThemeData.light().textTheme, // Applique le style par défaut du thème clair
     ),
     // ===========================================
-    colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.green).copyWith(background: Colors.white),
+    colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.green).copyWith(surface: Colors.white),
   );
 }

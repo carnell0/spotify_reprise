@@ -7,20 +7,20 @@ class AppException implements Exception {
 
 /// Server exception
 class ServerException extends AppException {
-  ServerException({required String message}) : super(message: message);
+  ServerException({required super.message});
 }
 
 /// Authentication exception
 class AuthException extends AppException {
-  AuthException({required String message}) : super(message: message);
+  AuthException({required super.message});
 }
 
 /// Cache exception
 class CacheException extends AppException {
-  CacheException({required String message}) : super(message: message);
+  CacheException({required super.message});
 }
 
 /// Network exception
 class NetworkException extends AppException {
-  NetworkException({required String message}) : super(message: message);
+  NetworkException({required super.message});
 }

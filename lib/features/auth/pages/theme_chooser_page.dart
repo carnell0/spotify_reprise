@@ -85,7 +85,7 @@ class ThemeChooserPage extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).primaryColor, // Couleur verte de Spotify
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20.0), // Bords arrondis
+                        borderRadius: BorderRadius.circular(30.0), // Bords arrondis
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 30.0), // Padding interne pour la hauteur du bouton
                     ),

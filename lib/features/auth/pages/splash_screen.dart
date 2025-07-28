@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
-// On va définir une route pour l'écran de bienvenue ici.
-// Pour l'instant, on peut aller directement à une page temporaire ou l'écran d'accueil.
-// Plus tard, cette logique vérifiera si l'utilisateur est connecté.
 import 'package:spotify_reprise/core/routes/routes.dart'; // Assure-toi que le chemin est correct
 
 class SplashScreen extends StatefulWidget {
@@ -20,7 +17,7 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
     // Délai pour afficher le splash screen avant de naviguer
     Future.delayed(const Duration(seconds: 8), () {
-      context.go(AppRoutes.themeChooser); 
+      context.go(AppRoutes.onboarding);
       //context.go(AppRoutes.onboarding);
     });
   }
