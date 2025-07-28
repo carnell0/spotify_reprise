@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:spotify_reprise/features/auth/bloc/theme_bloc.dart';
 import 'package:spotify_reprise/features/auth/bloc/theme_event.dart';
+import 'package:spotify_reprise/core/routes/routes.dart';
+import 'package:go_router/go_router.dart';
 
 class ThemeChooserPage extends StatelessWidget {
   const ThemeChooserPage({super.key});
@@ -77,10 +79,7 @@ class ThemeChooserPage extends StatelessWidget {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      // Action à effectuer lorsque le bouton "Continue" est pressé
-                      // Par exemple, naviguer vers la prochaine page
-                      // Navigator.of(context).pushReplacementNamed('/home');
-                      print('Bouton Continuer pressé');
+                      context.go(AppRoutes.welcome);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).primaryColor, // Couleur verte de Spotify

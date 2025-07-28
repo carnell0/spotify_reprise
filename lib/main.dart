@@ -4,9 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:spotify_reprise/core/routes/routes.dart';
 import 'package:spotify_reprise/features/auth/bloc/theme_bloc.dart';
 import 'package:spotify_reprise/features/auth/bloc/theme_state.dart';
+import 'package:spotify_reprise/features/auth/pages/register_page.dart';
+import 'package:spotify_reprise/features/auth/pages/sign_in_page.dart';
 import 'package:spotify_reprise/features/auth/pages/splash_screen.dart';
 import 'package:spotify_reprise/features/auth/pages/theme_chooser_page.dart';
-import 'package:spotify_reprise/features/auth/pages/get_started_page.dart'; // Importez la nouvelle page
+import 'package:spotify_reprise/features/auth/pages/get_started_page.dart';
+import 'package:spotify_reprise/features/auth/pages/welcome_auth_page.dart';
 
 void main() {
   runApp(MyApp());
@@ -30,10 +33,11 @@ class MyApp extends StatelessWidget {
         path: AppRoutes.themeChooser,
         builder: (context, state) => const ThemeChooserPage(),
       ),
-      // Assurez-vous d'ajouter les autres routes comme signIn, register, home, etc.,
-      // une fois que vous aurez créé les pages correspondantes.
-      // Par exemple :
-      /*
+      GoRoute(
+        path: AppRoutes.welcome, // La nouvelle page avec Register / Sign In
+        builder: (context, state) => const WelcomeAuthPage(),
+      ),
+      
       GoRoute(
         path: AppRoutes.signIn,
         builder: (context, state) => const SignInPage(), // Supposons que SignInPage existe
@@ -42,11 +46,10 @@ class MyApp extends StatelessWidget {
         path: AppRoutes.register,
         builder: (context, state) => const RegisterPage(), // Supposons que RegisterPage existe
       ),
-      GoRoute(
-        path: AppRoutes.home,
-        builder: (context, state) => const HomePage(), // Supposons que HomePage existe
-      ),
-      */
+      // GoRoute(
+      //   path: AppRoutes.home,
+      //   builder: (context, state) => const HomePage(), // Supposons que HomePage existe
+      // ),
     ],
   );
 
