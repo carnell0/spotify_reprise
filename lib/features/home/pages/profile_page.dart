@@ -4,8 +4,7 @@ import 'package:spotify_reprise/features/auth/bloc/theme_bloc.dart';
 import 'package:spotify_reprise/features/auth/bloc/theme_state.dart';
 import 'package:spotify_reprise/features/auth/bloc/auth_bloc.dart';
 import 'package:spotify_reprise/features/auth/bloc/auth_event.dart'; // Pour l'événement de déconnexion
-import 'package:go_router/go_router.dart';
-import 'package:spotify_reprise/core/routes/routes.dart'; // Pour la redirection après déconnexion
+// Pour la redirection après déconnexion
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});

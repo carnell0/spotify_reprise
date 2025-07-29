@@ -2,16 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:spotify_reprise/features/auth/bloc/theme_bloc.dart';
 import 'package:spotify_reprise/features/auth/bloc/theme_state.dart';
-import 'package:spotify_reprise/features/home/pages/favorites_page.dart';
+// Importez vos pages réelles
 import 'package:spotify_reprise/features/home/pages/home_content_page.dart';
+import 'package:spotify_reprise/features/home/pages/library_page.dart'; // NOUVEL IMPORT
 import 'package:spotify_reprise/features/home/pages/profile_page.dart';
-import 'package:spotify_reprise/features/home/pages/search_page.dart';
-
-// Importations des pages pour chaque onglet (à créer plus tard)
-// import 'package:spotify_reprise/features/home/pages/home_content_page.dart';
-// import 'package:spotify_reprise/features/search/pages/search_page.dart'; // Supposons un dossier 'search'
-// import 'package:spotify_reprise/features/favorites/pages/favorites_page.dart'; // Supposons un dossier 'favorites'
-// import 'package:spotify_reprise/features/profile/pages/profile_page.dart'; // Déjà dans la structure
+import 'package:spotify_reprise/features/home/pages/search_page.dart'; // Assurez-vous d'avoir cette page
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,15 +18,19 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0; // Index de l'onglet actuellement sélectionné
 
-  // Liste des widgets pour chaque onglet de la BottomNavigationBar
-  // Ces pages devront être créées dans leurs dossiers 'pages' respectifs
-  final List<Widget> _pages = [
-    // Remplacer ces place-holders par les véritables pages une fois créées
-    const HomeContentPage(), // home_content_page.dart
-    const SearchPage(), // search_page.dart
-    const FavoritesPage(), // favorites_page.dart
-    const ProfilePage(), // profile_page.dart
-  ];
+  // Liste des pages pour chaque onglet
+  late final List<Widget> _pages; // Déclarez comme 'late final'
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      const HomeContentPage(),
+      const SearchPage(), // Assurez-vous d'avoir votre SearchPage
+      const LibraryPage(), // NOUVELLE PAGE: Votre bibliothèque de musiques locales
+      const ProfilePage(),
+    ];
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -44,8 +43,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return BlocBuilder<ThemeBloc, ThemeState>(
       builder: (context, state) {
         final bool isDarkMode = state.themeData.brightness == Brightness.dark;
-        final Color dynamicBackgroundColor = state.themeData.scaffoldBackgroundColor;
         final Color dynamicForegroundColor = isDarkMode ? Colors.white : Colors.black;
+        final Color dynamicBackgroundColor = isDarkMode ? Colors.black : Colors.white;
         final Color accentColor = Theme.of(context).primaryColor; // Couleur verte de Spotify
 
         return Scaffold(
@@ -53,19 +52,20 @@ class _HomeScreenState extends State<HomeScreen> {
           body: _pages[_selectedIndex],
           bottomNavigationBar: BottomNavigationBar(
             items: <BottomNavigationBarItem>[
-              BottomNavigationBarItem(
+              const BottomNavigationBarItem(
                 icon: Icon(Icons.home_filled),
                 label: 'Home',
               ),
-              BottomNavigationBarItem(
+              const BottomNavigationBarItem(
                 icon: Icon(Icons.search),
                 label: 'Search',
               ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.favorite),
-                label: 'Favorites',
+              // CHANGEMENT ICI : ANCIENNEMENT 'Favorites'
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.library_music), // Nouvelle icône pour la bibliothèque
+                label: 'Bibliothèque', // Nouveau label
               ),
-              BottomNavigationBarItem(
+              const BottomNavigationBarItem(
                 icon: Icon(Icons.person),
                 label: 'Profile',
               ),
@@ -76,8 +76,8 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: _onItemTapped,
             type: BottomNavigationBarType.fixed, // Pour afficher tous les labels
             backgroundColor: dynamicBackgroundColor, // Couleur de fond de la barre de navigation
-            selectedLabelStyle: TextStyle(fontWeight: FontWeight.bold),
-            unselectedLabelStyle: TextStyle(fontWeight: FontWeight.normal),
+            selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
+            unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal),
           ),
         );
       },
