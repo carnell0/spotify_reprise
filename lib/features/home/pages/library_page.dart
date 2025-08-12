@@ -66,44 +66,64 @@ class _LibraryPageState extends State<LibraryPage> {
     super.dispose();
   }
 
-  Future<void> _requestPermissionsAndLoadSongs() async {
-    final status = await Permission.storage.request();
-    if (status.isGranted) {
-      try {
-        final List<SongModel> songs = await _audioQuery.querySongs(
-          sortType: SongSortType.TITLE, // Tri par titre par défaut pour la bibliothèque
-          orderType: OrderType.DESC_OR_GREATER,
-          uriType: UriType.EXTERNAL,
-          ignoreCase: true,
+  Future<bool> _requestAudioPermissions() async {
+    // Android 13+ : Permission.audio, sinon Permission.storage
+    if (await Permission.audio.isGranted || await Permission.storage.isGranted) {
+      return true;
+    }
+    PermissionStatus status;
+    if (await Permission.audio.isDenied || await Permission.audio.isRestricted) {
+      status = await Permission.audio.request();
+      if (status.isGranted) return true;
+    }
+    if (await Permission.storage.isDenied || await Permission.storage.isRestricted) {
+      status = await Permission.storage.request();
+      if (status.isGranted) return true;
+    }
+    // Si refusé de façon permanente
+    if (await Permission.audio.isPermanentlyDenied || await Permission.storage.isPermanentlyDenied) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Permission refusée de façon permanente. Veuillez l'activer dans les paramètres.")),
         );
-
-        setState(() {
-          _allSongs = songs.map((s) => LocalSong.fromSongModel(s)).toList();
-        });
-
-        if (_allSongs.isEmpty && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Aucune musique locale trouvée sur l'appareil.")),
-          );
-        }
-      } catch (e) {
-        print("Erreur lors de la requête des chansons dans LibraryPage: $e");
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Erreur de chargement des musiques : $e")),
-          );
-        }
+        openAppSettings();
       }
-    } else if (status.isDenied && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("La permission de stockage est nécessaire pour lire la musique.")),
+    }
+    return false;
+  }
+
+  Future<void> _requestPermissionsAndLoadSongs() async {
+    final hasPermission = await _requestAudioPermissions();
+    if (!hasPermission) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("La permission est nécessaire pour lire la musique.")),
+        );
+      }
+      return;
+    }
+    try {
+      final List<SongModel> songs = await _audioQuery.querySongs(
+        sortType: SongSortType.TITLE,
+        orderType: OrderType.DESC_OR_GREATER,
+        uriType: UriType.EXTERNAL,
+        ignoreCase: true,
       );
-      openAppSettings();
-    } else if (status.isPermanentlyDenied && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("La permission de stockage est refusée de façon permanente. Veuillez l'activer dans les paramètres.")),
-      );
-      openAppSettings();
+      setState(() {
+        _allSongs = songs.map((s) => LocalSong.fromSongModel(s)).toList();
+      });
+      if (_allSongs.isEmpty && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Aucune musique locale trouvée sur l'appareil.")),
+        );
+      }
+    } catch (e) {
+      print("Erreur lors de la requête des chansons dans LibraryPage: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Erreur de chargement des musiques : $e")),
+        );
+      }
     }
   }
 
