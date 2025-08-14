@@ -1,3 +1,4 @@
+// lib/features/home/pages/library_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:on_audio_query/on_audio_query.dart';
@@ -41,6 +42,10 @@ class LocalSong {
     );
   }
 }
+import 'package:spotify_reprise/models/local_song.dart'; // NOUVEL IMPORT
+import 'dart:typed_data';
+import 'package:just_audio/just_audio.dart';
+import 'dart:math';
 
 class LibraryPage extends StatefulWidget {
   const LibraryPage({super.key});
@@ -52,7 +57,7 @@ class LibraryPage extends StatefulWidget {
 class _LibraryPageState extends State<LibraryPage> {
   final OnAudioQuery _audioQuery = OnAudioQuery();
   List<LocalSong> _allSongs = [];
-  final AudioPlayer _player = AudioPlayer(); // Lecteur pour la lecture aléatoire
+  final AudioPlayer _player = AudioPlayer();
 
   @override
   void initState() {
@@ -62,7 +67,7 @@ class _LibraryPageState extends State<LibraryPage> {
 
   @override
   void dispose() {
-    _player.dispose(); // Libérez le lecteur audio
+    _player.dispose();
     super.dispose();
   }
 
@@ -85,6 +90,15 @@ class _LibraryPageState extends State<LibraryPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Permission refusée de façon permanente. Veuillez l'activer dans les paramètres.")),
+  Future<void> _requestPermissionsAndLoadSongs() async {
+    final status = await Permission.storage.request();
+    if (status.isGranted) {
+      try {
+        final List<SongModel> songs = await _audioQuery.querySongs(
+          sortType: SongSortType.TITLE,
+          orderType: OrderType.ASC_OR_SMALLER, // CORRECTION ICI : ÉTAIT ASC_OR_GREATER
+          uriType: UriType.EXTERNAL,
+          ignoreCase: true,
         );
         openAppSettings();
       }
@@ -130,7 +144,6 @@ class _LibraryPageState extends State<LibraryPage> {
     return _audioQuery.queryArtwork(id, ArtworkType.AUDIO, size: 200);
   }
 
-  // Fonction de lecture d'un morceau
   Future<void> _playSong(LocalSong song) async {
     try {
       if (song.uri != null && song.uri!.isNotEmpty) {
@@ -158,7 +171,6 @@ class _LibraryPageState extends State<LibraryPage> {
     }
   }
 
-  // Fonction de lecture aléatoire
   Future<void> _shuffleAndPlay() async {
     if (_allSongs.isEmpty) {
       if (mounted) {
@@ -169,13 +181,13 @@ class _LibraryPageState extends State<LibraryPage> {
       return;
     }
 
-    // Mélanger la liste des chansons
     List<LocalSong> shuffledSongs = List.from(_allSongs)..shuffle(Random());
 
-    // Créer une playlist à partir des chansons mélangées
     final audioSourceList = shuffledSongs
         .where((song) => song.uri != null && song.uri!.isNotEmpty)
         .map((song) => AudioSource.uri(Uri.parse(song.uri!), tag: song)) // Ajouter la chanson comme tag pour info
+        .where((song) => song.uri.isNotEmpty)
+        .map((song) => AudioSource.uri(Uri.parse(song.uri), tag: song))
         .toList();
 
     if (audioSourceList.isEmpty) {
@@ -188,7 +200,6 @@ class _LibraryPageState extends State<LibraryPage> {
     }
 
     try {
-      // Définir la source audio comme une playlist concacténée
       await _player.setAudioSource(
         ConcatenatingAudioSource(children: audioSourceList),
         initialIndex: 0,
@@ -200,8 +211,6 @@ class _LibraryPageState extends State<LibraryPage> {
           const SnackBar(content: Text("Lecture aléatoire démarrée !")),
         );
       }
-      // TODO: Ici, vous voudriez mettre à jour un PlayerBloc/Cubit avec la chanson en cours
-      // pour afficher la barre de lecture globale.
     } catch (e) {
       print("Erreur lors de la lecture aléatoire: $e");
       if (mounted) {
@@ -244,17 +253,15 @@ class _LibraryPageState extends State<LibraryPage> {
                 ),
           floatingActionButton: FloatingActionButton(
             onPressed: _shuffleAndPlay,
-            backgroundColor: Theme.of(context).primaryColor, // Couleur accent de Spotify
+            backgroundColor: Theme.of(context).primaryColor,
             child: const Icon(Icons.shuffle, color: Colors.white),
           ),
-          // Positionnement du FloatingActionButton en bas à gauche
           floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
         );
       },
     );
   }
 
-  // Widget pour un élément de la liste de chansons
   Widget _buildSongListItem(LocalSong song, bool isDarkMode) {
     return GestureDetector(
       onTap: () => _playSong(song),
@@ -264,6 +271,7 @@ class _LibraryPageState extends State<LibraryPage> {
           children: [
             // Artwork (utilisant le même widget que HomeContentPage)
             _buildArtworkWidget(song.id, 50, 50, defaultColor: Colors.blueGrey),
+            _buildArtworkWidget(song.albumId, 50, 50, defaultColor: Colors.blueGrey),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -292,7 +300,6 @@ class _LibraryPageState extends State<LibraryPage> {
                 ],
               ),
             ),
-            // TODO: Ajouter une icône de menu (trois points) pour des options supplémentaires
             IconButton(
               icon: Icon(Icons.more_vert, color: isDarkMode ? Colors.white70 : Colors.black54),
               onPressed: () {
@@ -307,12 +314,13 @@ class _LibraryPageState extends State<LibraryPage> {
 
   // Widget générique pour charger et afficher l'artwork (copié de HomeContentPage)
   Widget _buildArtworkWidget(int id, double width, double height, {bool isCircular = false, required Color defaultColor}) {
+  Widget _buildArtworkWidget(int albumId, double width, double height, {bool isCircular = false, required Color defaultColor}) {
     return FutureBuilder<Uint8List?>(
       future: _getArtwork(id),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done && snapshot.hasData && snapshot.data != null) {
           return ClipRRect(
-            borderRadius: BorderRadius.circular(isCircular ? width / 2 : 4), // Arrondi pour le cercle ou le carré
+            borderRadius: BorderRadius.circular(isCircular ? width / 2 : 4),
             child: Image.memory(
               snapshot.data!,
               width: width,
@@ -321,7 +329,6 @@ class _LibraryPageState extends State<LibraryPage> {
             ),
           );
         } else {
-          // Fallback artwork (couleur par défaut ou icône)
           return Container(
             width: width,
             height: height,

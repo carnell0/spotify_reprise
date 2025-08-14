@@ -6,42 +6,12 @@ import 'package:on_audio_query/on_audio_query.dart';
 import 'package:permission_handler/permission_handler.dart'; // Importez pour les permissions
 import 'package:just_audio/just_audio.dart'; // Pour la lecture audio (si non centralisé dans un service)
 import 'dart:typed_data'; // Nécessaire pour Uint8List
+=======
+import 'package:permission_handler/permission_handler.dart';
+import 'package:just_audio/just_audio.dart';
+import 'dart:typed_data';
+import 'package:spotify_reprise/models/local_song.dart'; // Import du modèle LocalSong partagé
 
-// --- MODÈLE DE DONNÉES SIMPLE POUR UNE CHANSON ---
-class LocalSong {
-  final int id; // Utilisez int pour l'ID de SongModel
-  final String title;
-  final String artist;
-  final String album;
-  final String uri; // URI du fichier pour la lecture
-  final Duration duration; // Durée du morceau
-  final int albumId; // Ajout de l'albumId pour récupérer l'artwork de l'album
-
-  const LocalSong({
-    required this.id,
-    required this.title,
-    required this.artist,
-    required this.album,
-    required this.uri,
-    required this.duration,
-    required this.albumId, // Doit être requis
-  });
-
-  // Méthode de fabrique pour convertir SongModel de on_audio_query
-  factory LocalSong.fromSongModel(SongModel song) {
-    return LocalSong(
-      id: song.id, // ID de la chanson
-      title: song.title,
-      artist: song.artist ?? 'Unknown Artist',
-      album: song.album ?? 'Unknown Album',
-      uri: song.uri ?? '', // Assurez-vous que l'URI n'est pas null
-      duration: Duration(milliseconds: song.duration ?? 0),
-      albumId: song.albumId ?? 0, // Utilisez l'albumId (valeur par défaut 0 si null)
-    );
-  }
-}
-
-// --- HOME CONTENT PAGE ---
 class HomeContentPage extends StatefulWidget {
   const HomeContentPage({super.key});
 
@@ -52,11 +22,10 @@ class HomeContentPage extends StatefulWidget {
 class _HomeContentPageState extends State<HomeContentPage> {
   final OnAudioQuery _audioQuery = OnAudioQuery();
   List<LocalSong> _allSongs = [];
-  List<LocalSong> _recentlyPlayed = []; // Rempli avec des données réelles
-  List<LocalSong> _mostPlayed = []; // Rempli avec des données réelles
-  List<LocalSong> _favoriteSongs = []; // Rempli avec des données réelles
+  List<LocalSong> _recentlyPlayed = [];
+  List<LocalSong> _mostPlayed = [];
+  List<LocalSong> _favoriteSongs = [];
 
-  // Un simple lecteur audio pour tester (vous voudrez un service audio plus robuste)
   final AudioPlayer _player = AudioPlayer();
 
   @override
@@ -67,19 +36,19 @@ class _HomeContentPageState extends State<HomeContentPage> {
 
   @override
   void dispose() {
-    _player.dispose(); // Libérez le lecteur audio
+    _player.dispose();
     super.dispose();
   }
 
-  // Méthode pour demander les permissions et charger les chansons
   Future<void> _requestPermissionsAndLoadSongs() async {
-    // Vérifier et demander la permission de stockage externe
     final status = await Permission.storage.request();
     if (status.isGranted) {
       try {
         final List<SongModel> songs = await _audioQuery.querySongs(
           sortType: SongSortType.DATE_ADDED,
-          orderType: OrderType.DESC_OR_GREATER,
+          // Correction ici: Utilisation de DESC pour décroissant, ou DESC_OR_GREATER si on_audio_query le supporte.
+          // Si DESC_OR_GREATER pose problème, utilisez juste DESC.
+          orderType: OrderType.DESC_OR_GREATER, // Ou OrderType.DESC_OR_GREATER si c'était le but et que ça fonctionne
           uriType: UriType.EXTERNAL,
           ignoreCase: true,
         );
@@ -87,18 +56,12 @@ class _HomeContentPageState extends State<HomeContentPage> {
         setState(() {
           _allSongs = songs.map((s) => LocalSong.fromSongModel(s)).toList();
 
-          // Utiliser les chansons réelles pour remplir les sections
-          // Pour un exemple fonctionnel sans logique complexe de "récemment joué" ou "plus écouté"
-          // on prend juste les premières chansons disponibles.
-          // Vous devrez implémenter une logique de persistance (base de données locale, SharedPreferences)
-          // pour gérer les "récemment joués" et "plus écoutés" réels.
           if (_allSongs.isNotEmpty) {
+            // Assurez-vous d'avoir assez de chansons pour éviter les erreurs d'index
             _recentlyPlayed = _allSongs.take(5).toList();
-            // Assurez-vous d'avoir au moins 10 chansons pour éviter les erreurs de sublist
             _mostPlayed = _allSongs.length > 5 ? _allSongs.skip(5).take(5).toList() : [];
             _favoriteSongs = _allSongs.length > 10 ? _allSongs.skip(10).take(3).toList() : [];
           } else {
-            // Afficher un message si aucune musique n'est trouvée
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text("Aucune musique locale trouvée sur l'appareil.")),
@@ -120,7 +83,7 @@ class _HomeContentPageState extends State<HomeContentPage> {
           const SnackBar(content: Text("La permission de stockage est nécessaire pour lire la musique.")),
         );
       }
-      openAppSettings(); // Ouvre les paramètres de l'app pour que l'utilisateur puisse activer la permission
+      openAppSettings();
     } else if (status.isPermanentlyDenied) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -158,15 +121,13 @@ class _HomeContentPageState extends State<HomeContentPage> {
     }
   }
 
-  // Fonction pour récupérer l'artwork
   Future<Uint8List?> _getArtwork(int albumId) async {
-    // on_audio_query retourne null si l'albumId est 0 ou si aucune pochette n'est trouvée.
-    if (albumId == 0) return null;
+    if (albumId == 0) return null; // Retourne null si l'ID est 0 (souvent utilisé pour l'absence d'ID)
     return await _audioQuery.queryArtwork(
       albumId,
-      ArtworkType.ALBUM, // Ou ArtworkType.AUDIO pour un artwork spécifique à la chanson
-      format: ArtworkFormat.JPEG, // Format de l'artwork
-      size: 200, // Taille de l'image (peut être ajustée)
+      ArtworkType.ALBUM,
+      format: ArtworkFormat.JPEG,
+      size: 200,
       quality: 100,
     );
   }
@@ -180,10 +141,10 @@ class _HomeContentPageState extends State<HomeContentPage> {
 
         return Scaffold(
           appBar: AppBar(
-            backgroundColor: Colors.transparent, // Transparente
+            backgroundColor: Colors.transparent,
             elevation: 0,
             title: Text(
-              'Good evening', // Ou 'Bonjour', 'Good morning', etc.
+              'Good evening',
               style: TextStyle(
                 color: dynamicForegroundColor,
                 fontSize: 24,
@@ -198,7 +159,7 @@ class _HomeContentPageState extends State<HomeContentPage> {
                 },
               ),
               IconButton(
-                icon: Icon(Icons.settings, color: dynamicForegroundColor), // Icône des paramètres
+                icon: Icon(Icons.settings, color: dynamicForegroundColor),
                 onPressed: () {
                   // TODO: Gérer les paramètres (rediriger vers ProfilePage ou une page de paramètres)
                 },
@@ -206,7 +167,7 @@ class _HomeContentPageState extends State<HomeContentPage> {
             ],
           ),
           body: _allSongs.isEmpty && (_recentlyPlayed.isEmpty && _mostPlayed.isEmpty && _favoriteSongs.isEmpty)
-              ? const Center(child: CircularProgressIndicator()) // Indicateur de chargement si vide
+              ? const Center(child: CircularProgressIndicator()) // Indicateur de chargement si aucune musique
               : SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                   child: Column(
@@ -248,9 +209,8 @@ class _HomeContentPageState extends State<HomeContentPage> {
                           ),
                         ),
                         const SizedBox(height: 15),
-                        // Carousel avec PageView.builder
                         SizedBox(
-                          height: 200, // Hauteur fixe pour le carousel
+                          height: 200,
                           child: PageView.builder(
                             itemCount: _recentlyPlayed.length,
                             controller: PageController(viewportFraction: 0.8),
@@ -276,7 +236,6 @@ class _HomeContentPageState extends State<HomeContentPage> {
                           ),
                         ),
                         const SizedBox(height: 15),
-                        // Grille des plus écoutés
                         GridView.builder(
                           physics: const NeverScrollableScrollPhysics(),
                           shrinkWrap: true,
@@ -293,7 +252,7 @@ class _HomeContentPageState extends State<HomeContentPage> {
                           },
                         ),
                       ],
-                      const SizedBox(height: 40), // Espace en bas
+                      const SizedBox(height: 40),
                     ],
                   ),
                 ),
@@ -301,8 +260,6 @@ class _HomeContentPageState extends State<HomeContentPage> {
       },
     );
   }
-
-  // --- Widgets de construction des éléments (inchangés) ---
 
   Widget _buildFavoriteItem(LocalSong song, bool isDarkMode) {
     return GestureDetector(
@@ -435,26 +392,28 @@ class _HomeContentPageState extends State<HomeContentPage> {
     );
   }
 
-  // --- Widget générique pour charger et afficher l'artwork ---
   Widget _buildArtworkWidget(int albumId, double width, double height, {bool isCircular = false, required Color defaultColor}) {
     return FutureBuilder<Uint8List?>(
       future: _getArtwork(albumId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done && snapshot.hasData && snapshot.data != null) {
-          return Image.memory(
-            snapshot.data!,
-            width: width,
-            height: height,
-            fit: BoxFit.cover,
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(isCircular ? width / 2 : 4),
+            child: Image.memory(
+              snapshot.data!,
+              width: width,
+              height: height,
+              fit: BoxFit.cover,
+            ),
           );
         } else {
-          // Fallback artwork (couleur par défaut ou icône)
           return Container(
             width: width,
             height: height,
             decoration: BoxDecoration(
               color: defaultColor,
               shape: isCircular ? BoxShape.circle : BoxShape.rectangle,
+              borderRadius: isCircular ? null : BorderRadius.circular(4),
             ),
             child: Icon(
               Icons.music_note,
