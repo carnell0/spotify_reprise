@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:spotify_reprise/features/auth/bloc/theme_bloc.dart';
 import 'package:spotify_reprise/features/auth/bloc/theme_state.dart';
-import 'package:on_audio_query/on_audio_query.dart'; // Importez on_audio_query
+import 'package:on_audio_query/on_audio_query.dart';
 import 'package:permission_handler/permission_handler.dart'; // Importez pour les permissions
 import 'package:just_audio/just_audio.dart'; // Pour la lecture audio (si non centralisé dans un service)
 import 'dart:typed_data'; // Nécessaire pour Uint8List

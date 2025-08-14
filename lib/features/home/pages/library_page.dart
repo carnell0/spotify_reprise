@@ -15,9 +15,9 @@ class LocalSong {
   final String title;
   final String artist;
   final String album;
-  final String uri;
+  final String? uri;
   final Duration duration;
-  final int albumId;
+  final int? albumId;
 
   const LocalSong({
     required this.id,
@@ -26,7 +26,7 @@ class LocalSong {
     required this.album,
     required this.uri,
     required this.duration,
-    required this.albumId,
+    this.albumId,
   });
 
   factory LocalSong.fromSongModel(SongModel song) {
@@ -35,9 +35,9 @@ class LocalSong {
       title: song.title,
       artist: song.artist ?? 'Unknown Artist',
       album: song.album ?? 'Unknown Album',
-      uri: song.uri ?? '',
+      uri: song.uri,
       duration: Duration(milliseconds: song.duration ?? 0),
-      albumId: song.albumId ?? 0,
+      albumId: song.albumId,
     );
   }
 }
@@ -105,9 +105,8 @@ class _LibraryPageState extends State<LibraryPage> {
     try {
       final List<SongModel> songs = await _audioQuery.querySongs(
         sortType: SongSortType.TITLE,
-        orderType: OrderType.DESC_OR_GREATER,
+        orderType: OrderType.ASC_OR_SMALLER,
         uriType: UriType.EXTERNAL,
-        ignoreCase: true,
       );
       setState(() {
         _allSongs = songs.map((s) => LocalSong.fromSongModel(s)).toList();
@@ -127,22 +126,15 @@ class _LibraryPageState extends State<LibraryPage> {
     }
   }
 
-  Future<Uint8List?> _getArtwork(int albumId) async {
-    if (albumId == 0) return null;
-    return await _audioQuery.queryArtwork(
-      albumId,
-      ArtworkType.ALBUM,
-      format: ArtworkFormat.JPEG,
-      size: 200,
-      quality: 100,
-    );
+  Future<Uint8List?> _getArtwork(int id) async {
+    return _audioQuery.queryArtwork(id, ArtworkType.AUDIO, size: 200);
   }
 
   // Fonction de lecture d'un morceau
   Future<void> _playSong(LocalSong song) async {
     try {
-      if (song.uri.isNotEmpty) {
-        await _player.setAudioSource(AudioSource.uri(Uri.parse(song.uri)));
+      if (song.uri != null && song.uri!.isNotEmpty) {
+        await _player.setAudioSource(AudioSource.uri(Uri.parse(song.uri!)));
         await _player.play();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -182,8 +174,8 @@ class _LibraryPageState extends State<LibraryPage> {
 
     // Créer une playlist à partir des chansons mélangées
     final audioSourceList = shuffledSongs
-        .where((song) => song.uri.isNotEmpty)
-        .map((song) => AudioSource.uri(Uri.parse(song.uri), tag: song)) // Ajouter la chanson comme tag pour info
+        .where((song) => song.uri != null && song.uri!.isNotEmpty)
+        .map((song) => AudioSource.uri(Uri.parse(song.uri!), tag: song)) // Ajouter la chanson comme tag pour info
         .toList();
 
     if (audioSourceList.isEmpty) {
@@ -271,7 +263,7 @@ class _LibraryPageState extends State<LibraryPage> {
         child: Row(
           children: [
             // Artwork (utilisant le même widget que HomeContentPage)
-            _buildArtworkWidget(song.albumId, 50, 50, defaultColor: Colors.blueGrey),
+            _buildArtworkWidget(song.id, 50, 50, defaultColor: Colors.blueGrey),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -314,9 +306,9 @@ class _LibraryPageState extends State<LibraryPage> {
   }
 
   // Widget générique pour charger et afficher l'artwork (copié de HomeContentPage)
-  Widget _buildArtworkWidget(int albumId, double width, double height, {bool isCircular = false, required Color defaultColor}) {
+  Widget _buildArtworkWidget(int id, double width, double height, {bool isCircular = false, required Color defaultColor}) {
     return FutureBuilder<Uint8List?>(
-      future: _getArtwork(albumId),
+      future: _getArtwork(id),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done && snapshot.hasData && snapshot.data != null) {
           return ClipRRect(
