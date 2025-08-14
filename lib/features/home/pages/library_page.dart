@@ -5,6 +5,43 @@ import 'package:on_audio_query/on_audio_query.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:spotify_reprise/features/auth/bloc/theme_bloc.dart';
 import 'package:spotify_reprise/features/auth/bloc/theme_state.dart';
+import 'dart:typed_data'; // Pour Uint8List
+import 'package:just_audio/just_audio.dart'; // Pour la lecture audio
+import 'dart:math'; // Pour la lecture aléatoire
+
+// Réutiliser le modèle LocalSong de home_content_page.dart
+// Idéalement, ce modèle serait dans un fichier séparé partagé (ex: lib/models/local_song.dart)
+class LocalSong {
+  final int id;
+  final String title;
+  final String artist;
+  final String album;
+  final String? uri;
+  final Duration duration;
+  final int? albumId;
+
+  const LocalSong({
+    required this.id,
+    required this.title,
+    required this.artist,
+    required this.album,
+    required this.uri,
+    required this.duration,
+    this.albumId,
+  });
+
+  factory LocalSong.fromSongModel(SongModel song) {
+    return LocalSong(
+      id: song.id,
+      title: song.title,
+      artist: song.artist ?? 'Unknown Artist',
+      album: song.album ?? 'Unknown Album',
+      uri: song.uri,
+      duration: Duration(milliseconds: song.duration ?? 0),
+      albumId: song.albumId,
+    );
+  }
+}
 import 'package:spotify_reprise/models/local_song.dart'; // NOUVEL IMPORT
 import 'dart:typed_data';
 import 'package:just_audio/just_audio.dart';
@@ -34,6 +71,25 @@ class _LibraryPageState extends State<LibraryPage> {
     super.dispose();
   }
 
+  Future<bool> _requestAudioPermissions() async {
+    // Android 13+ : Permission.audio, sinon Permission.storage
+    if (await Permission.audio.isGranted || await Permission.storage.isGranted) {
+      return true;
+    }
+    PermissionStatus status;
+    if (await Permission.audio.isDenied || await Permission.audio.isRestricted) {
+      status = await Permission.audio.request();
+      if (status.isGranted) return true;
+    }
+    if (await Permission.storage.isDenied || await Permission.storage.isRestricted) {
+      status = await Permission.storage.request();
+      if (status.isGranted) return true;
+    }
+    // Si refusé de façon permanente
+    if (await Permission.audio.isPermanentlyDenied || await Permission.storage.isPermanentlyDenied) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Permission refusée de façon permanente. Veuillez l'activer dans les paramètres.")),
   Future<void> _requestPermissionsAndLoadSongs() async {
     final status = await Permission.storage.request();
     if (status.isGranted) {
@@ -44,52 +100,54 @@ class _LibraryPageState extends State<LibraryPage> {
           uriType: UriType.EXTERNAL,
           ignoreCase: true,
         );
-
-        setState(() {
-          _allSongs = songs.map((s) => LocalSong.fromSongModel(s)).toList();
-        });
-
-        if (_allSongs.isEmpty && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Aucune musique locale trouvée sur l'appareil.")),
-          );
-        }
-      } catch (e) {
-        print("Erreur lors de la requête des chansons dans LibraryPage: $e");
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Erreur de chargement des musiques : $e")),
-          );
-        }
+        openAppSettings();
       }
-    } else if (status.isDenied && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("La permission de stockage est nécessaire pour lire la musique.")),
+    }
+    return false;
+  }
+
+  Future<void> _requestPermissionsAndLoadSongs() async {
+    final hasPermission = await _requestAudioPermissions();
+    if (!hasPermission) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("La permission est nécessaire pour lire la musique.")),
+        );
+      }
+      return;
+    }
+    try {
+      final List<SongModel> songs = await _audioQuery.querySongs(
+        sortType: SongSortType.TITLE,
+        orderType: OrderType.ASC_OR_SMALLER,
+        uriType: UriType.EXTERNAL,
       );
-      openAppSettings();
-    } else if (status.isPermanentlyDenied && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("La permission de stockage est refusée de façon permanente. Veuillez l'activer dans les paramètres.")),
-      );
-      openAppSettings();
+      setState(() {
+        _allSongs = songs.map((s) => LocalSong.fromSongModel(s)).toList();
+      });
+      if (_allSongs.isEmpty && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Aucune musique locale trouvée sur l'appareil.")),
+        );
+      }
+    } catch (e) {
+      print("Erreur lors de la requête des chansons dans LibraryPage: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Erreur de chargement des musiques : $e")),
+        );
+      }
     }
   }
 
-  Future<Uint8List?> _getArtwork(int albumId) async {
-    if (albumId == 0) return null;
-    return await _audioQuery.queryArtwork(
-      albumId,
-      ArtworkType.ALBUM,
-      format: ArtworkFormat.JPEG,
-      size: 200,
-      quality: 100,
-    );
+  Future<Uint8List?> _getArtwork(int id) async {
+    return _audioQuery.queryArtwork(id, ArtworkType.AUDIO, size: 200);
   }
 
   Future<void> _playSong(LocalSong song) async {
     try {
-      if (song.uri.isNotEmpty) {
-        await _player.setAudioSource(AudioSource.uri(Uri.parse(song.uri)));
+      if (song.uri != null && song.uri!.isNotEmpty) {
+        await _player.setAudioSource(AudioSource.uri(Uri.parse(song.uri!)));
         await _player.play();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -126,6 +184,8 @@ class _LibraryPageState extends State<LibraryPage> {
     List<LocalSong> shuffledSongs = List.from(_allSongs)..shuffle(Random());
 
     final audioSourceList = shuffledSongs
+        .where((song) => song.uri != null && song.uri!.isNotEmpty)
+        .map((song) => AudioSource.uri(Uri.parse(song.uri!), tag: song)) // Ajouter la chanson comme tag pour info
         .where((song) => song.uri.isNotEmpty)
         .map((song) => AudioSource.uri(Uri.parse(song.uri), tag: song))
         .toList();
@@ -209,6 +269,8 @@ class _LibraryPageState extends State<LibraryPage> {
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         child: Row(
           children: [
+            // Artwork (utilisant le même widget que HomeContentPage)
+            _buildArtworkWidget(song.id, 50, 50, defaultColor: Colors.blueGrey),
             _buildArtworkWidget(song.albumId, 50, 50, defaultColor: Colors.blueGrey),
             const SizedBox(width: 12),
             Expanded(
@@ -250,9 +312,11 @@ class _LibraryPageState extends State<LibraryPage> {
     );
   }
 
+  // Widget générique pour charger et afficher l'artwork (copié de HomeContentPage)
+  Widget _buildArtworkWidget(int id, double width, double height, {bool isCircular = false, required Color defaultColor}) {
   Widget _buildArtworkWidget(int albumId, double width, double height, {bool isCircular = false, required Color defaultColor}) {
     return FutureBuilder<Uint8List?>(
-      future: _getArtwork(albumId),
+      future: _getArtwork(id),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done && snapshot.hasData && snapshot.data != null) {
           return ClipRRect(

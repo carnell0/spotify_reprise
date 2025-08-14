@@ -159,18 +159,16 @@ class _MyAppState extends State<MyApp> {
           // Ce BlocListener est pour les messages SnackBar, la navigation est gérée par GoRouter.redirect
           return BlocListener<AuthBloc, AuthState>(
             listener: (context, authState) {
+              if (!mounted) return;
               if (authState is AuthAuthenticated) {
-                // Affiche un SnackBar de succès après la connexion
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Successfully signed in!'), duration: Duration(seconds: 2)),
                 );
               } else if (authState is AuthError) {
-                // Affiche un SnackBar en cas d'erreur d'authentification
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Authentication Error: ${authState.message}'), duration: const Duration(seconds: 3)),
+                  SnackBar(content: Text('Authentication Error: \${authState.message}'), duration: const Duration(seconds: 3)),
                 );
               } else if (authState is AuthLoading) {
-                // Affiche un SnackBar de chargement
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Signing in...'), duration: Duration(seconds: 1)),
                 );
