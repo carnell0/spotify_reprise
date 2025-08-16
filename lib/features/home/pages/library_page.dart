@@ -1,7 +1,7 @@
 // lib/features/home/pages/library_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:on_audio_query/on_audio_query.dart';
+//import 'package:on_audio_query/on_audio_query.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:spotify_reprise/features/auth/bloc/theme_bloc.dart';
 import 'package:spotify_reprise/features/auth/bloc/theme_state.dart';
@@ -9,6 +9,7 @@ import 'package:spotify_reprise/models/local_song.dart'; // NOUVEL IMPORT
 import 'dart:typed_data';
 import 'package:just_audio/just_audio.dart';
 import 'dart:math';
+import 'package:on_audio_query_pluse/on_audio_query.dart';
 
 class LibraryPage extends StatefulWidget {
   const LibraryPage({super.key});
@@ -216,7 +217,7 @@ class _LibraryPageState extends State<LibraryPage> {
             backgroundColor: Theme.of(context).primaryColor,
             child: const Icon(Icons.shuffle, color: Colors.white),
           ),
-          floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
+          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         );
       },
     );
