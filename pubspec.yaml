@@ -47,9 +47,15 @@ dependencies:
   go_router: ^16.0.0
   google_fonts: ^6.2.1
   permission_handler: ^12.0.1
+  # on_audio_query: 
+  #   path: plugins/on_audio_query
+
   # on_audio_query:
-  on_audio_query: ^2.9.0
+  #   git:
+  #     url: https://github.com/carnell0/on_audio_query.git
+  #     ref: main
   carousel_slider: ^5.1.1
+  on_audio_query_pluse: ^2.9.4
 
 dev_dependencies:
   flutter_test:

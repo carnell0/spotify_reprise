@@ -1,7 +1,7 @@
 // lib/features/home/pages/library_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:on_audio_query/on_audio_query.dart';
+//import 'package:on_audio_query/on_audio_query.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:spotify_reprise/features/auth/bloc/theme_bloc.dart';
 import 'package:spotify_reprise/features/auth/bloc/theme_state.dart';
@@ -46,6 +46,7 @@ import 'package:spotify_reprise/models/local_song.dart'; // NOUVEL IMPORT
 import 'dart:typed_data';
 import 'package:just_audio/just_audio.dart';
 import 'dart:math';
+import 'package:on_audio_query_pluse/on_audio_query.dart';
 
 class LibraryPage extends StatefulWidget {
   const LibraryPage({super.key});
@@ -90,15 +91,6 @@ class _LibraryPageState extends State<LibraryPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Permission refusée de façon permanente. Veuillez l'activer dans les paramètres.")),
-  Future<void> _requestPermissionsAndLoadSongs() async {
-    final status = await Permission.storage.request();
-    if (status.isGranted) {
-      try {
-        final List<SongModel> songs = await _audioQuery.querySongs(
-          sortType: SongSortType.TITLE,
-          orderType: OrderType.ASC_OR_SMALLER, // CORRECTION ICI : ÉTAIT ASC_OR_GREATER
-          uriType: UriType.EXTERNAL,
-          ignoreCase: true,
         );
         openAppSettings();
       }
@@ -256,7 +248,7 @@ class _LibraryPageState extends State<LibraryPage> {
             backgroundColor: Theme.of(context).primaryColor,
             child: const Icon(Icons.shuffle, color: Colors.white),
           ),
-          floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
+          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         );
       },
     );
