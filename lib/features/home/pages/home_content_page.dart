@@ -3,12 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:spotify_reprise/features/auth/bloc/theme_bloc.dart';
 import 'package:spotify_reprise/features/auth/bloc/theme_state.dart';
 //import 'package:on_audio_query/on_audio_query.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:just_audio/just_audio.dart';
 import 'dart:typed_data';
 import 'package:spotify_reprise/models/local_song.dart'; // Import du modèle LocalSong partagé
-import 'package:on_audio_query_pluse/on_audio_query.dart';
-
+//import 'package:on_audio_query/on_audio_query.dart';
+import 'package:on_audio_query_forked_carnell/on_audio_query.dart';
 class HomeContentPage extends StatefulWidget {
   const HomeContentPage({super.key});
 
@@ -28,7 +27,7 @@ class _HomeContentPageState extends State<HomeContentPage> {
   @override
   void initState() {
     super.initState();
-    _requestPermissionsAndLoadSongs();
+    _loadSongs();
   }
 
   @override
@@ -37,57 +36,37 @@ class _HomeContentPageState extends State<HomeContentPage> {
     super.dispose();
   }
 
-  Future<void> _requestPermissionsAndLoadSongs() async {
-    final status = await Permission.storage.request();
-    if (status.isGranted) {
-      try {
-        final List<SongModel> songs = await _audioQuery.querySongs(
-          sortType: SongSortType.DATE_ADDED,
-          // Correction ici: Utilisation de DESC pour décroissant, ou DESC_OR_GREATER si on_audio_query le supporte.
-          // Si DESC_OR_GREATER pose problème, utilisez juste DESC.
-          orderType: OrderType.DESC_OR_GREATER, // Ou OrderType.DESC_OR_GREATER si c'était le but et que ça fonctionne
-          uriType: UriType.EXTERNAL,
-          ignoreCase: true,
-        );
+  Future<void> _loadSongs() async {
+    try {
+      final List<SongModel> songs = await _audioQuery.querySongs(
+        sortType: SongSortType.DATE_ADDED,
+        uriType: UriType.EXTERNAL,
+        ignoreCase: true,
+      );
 
-        setState(() {
-          _allSongs = songs.map((s) => LocalSong.fromSongModel(s)).toList();
+      setState(() {
+        _allSongs = songs.map((s) => LocalSong.fromSongModel(s)).toList();
 
-          if (_allSongs.isNotEmpty) {
-            // Assurez-vous d'avoir assez de chansons pour éviter les erreurs d'index
-            _recentlyPlayed = _allSongs.take(5).toList();
-            _mostPlayed = _allSongs.length > 5 ? _allSongs.skip(5).take(5).toList() : [];
-            _favoriteSongs = _allSongs.length > 10 ? _allSongs.skip(10).take(3).toList() : [];
-          } else {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Aucune musique locale trouvée sur l'appareil.")),
-              );
-            }
+        if (_allSongs.isNotEmpty) {
+          // Assurez-vous d'avoir assez de chansons pour éviter les erreurs d'index
+          _recentlyPlayed = _allSongs.take(5).toList();
+          _mostPlayed = _allSongs.length > 5 ? _allSongs.skip(5).take(5).toList() : [];
+          _favoriteSongs = _allSongs.length > 10 ? _allSongs.skip(10).take(3).toList() : [];
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Aucune musique locale trouvée sur l'appareil.")),
+            );
           }
-        });
-      } catch (e) {
-        print("Erreur lors de la requête des chansons: $e");
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Erreur de chargement des musiques : $e")),
-          );
         }
-      }
-    } else if (status.isDenied) {
+      });
+    } catch (e) {
+      print("Erreur lors de la requête des chansons: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("La permission de stockage est nécessaire pour lire la musique.")),
+          SnackBar(content: Text("Erreur de chargement des musiques : $e")),
         );
       }
-      openAppSettings();
-    } else if (status.isPermanentlyDenied) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("La permission de stockage est refusée de façon permanente. Veuillez l'activer dans les paramètres.")),
-        );
-      }
-      openAppSettings();
     }
   }
 

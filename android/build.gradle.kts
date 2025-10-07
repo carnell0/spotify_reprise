@@ -1,35 +1,23 @@
 allprojects {
     repositories {
+        // Prefer mirrors first to avoid dl.google.com / maven central timeouts
+        maven { url = uri("https://maven.aliyun.com/repository/google") }
+        maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
         google()
         mavenCentral()
     }
 }
+// Remove the kotlin block and use Gradle APIs for build directory configuration
 
-val newBuildDir: Directory = rootProject.layout.buildDirectory.dir("../../build").get()
-rootProject.layout.buildDirectory.value(newBuildDir)
-
-subprojects {
-    val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
-    project.layout.buildDirectory.value(newSubprojectBuildDir)
-}
-subprojects {
-    afterEvaluate {
-        plugins.withId("com.android.library") { 
-            extensions.configure<com.android.build.gradle.LibraryExtension>("android") {
-                if (namespace == null) {
-                    namespace = group.toString()
-                }
-            }
-        }
-    }
-    project.evaluationDependsOn(":app")
-}
+// Set custom build directory for root project
+buildDir = file("../../build")
 
 subprojects {
-    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-        kotlinOptions {
-            jvmTarget = "17" 
-        }
+    // Set custom build directory for subprojects
+    buildDir = file("${rootProject.buildDir}/${project.name}")
+    // Only declare an evaluation dependency if the :app project exists in this composite
+    if (rootProject.findProject(":app") != null) {
+        evaluationDependsOn(":app")
     }
 }
 
